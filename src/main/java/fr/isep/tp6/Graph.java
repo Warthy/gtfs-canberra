@@ -11,6 +11,10 @@ public abstract class Graph {
 
 	Map<String, Node> vertices = new HashMap<>();
 
+	public Graph(){
+
+	}
+
 	public Graph(String GTFSDirectory) {
 		BufferedReader reader;
 
@@ -58,6 +62,7 @@ public abstract class Graph {
 
 	abstract public void addEdge(Node from, Node to);
 
+	abstract public void removeEdge(String from, String to);
 
 	public List<List<String>> getAllShortestPaths() {
 		Set<Pair<String, String>> allPossiblePairs = new HashSet<>();
