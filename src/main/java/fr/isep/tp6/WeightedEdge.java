@@ -3,6 +3,16 @@ package fr.isep.tp6;
 public class WeightedEdge extends Edge {
 	Double weight;
 
+	public WeightedEdge(String from, String to, Double weight) {
+		super(from, to);
+		this.weight = weight;
+	}
+
+	public WeightedEdge(Node from, Node to, Double weight) {
+		super(from, to);
+		this.weight = weight;
+	}
+
 	public WeightedEdge(Node from, Node to) {
 		super(from, to);
 		/*

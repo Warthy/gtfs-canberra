@@ -10,9 +10,10 @@ import java.util.*;
 public abstract class Graph {
 
 	Map<String, Node> vertices = new HashMap<>();
+	Boolean directed = false;
 
-	public Graph(){
-
+	public Graph(boolean directed){
+		this.directed = directed;
 	}
 
 	public Graph(String GTFSDirectory) {
@@ -60,11 +61,11 @@ public abstract class Graph {
 		}
 	}
 
-	abstract public void addEdge(Node from, Node to);
+	abstract public Graph addEdge(Node from, Node to);
 
-	abstract public void removeEdge(String from, String to);
+	abstract public Graph removeEdge(String from, String to);
 
-	abstract public void removeEdge(Edge edge);
+	abstract public Graph removeEdge(Edge edge);
 
 	public Double getPathCost(List<String> path){
 		Double cost = 0.0;

@@ -6,10 +6,12 @@ import java.util.*;
 
 public class ChenAlgorithm {
 
-	public static void run(WeightedGraph graph, int K, String source, String sink) {
+	public static List<List<String>> run(WeightedGraph graph, int K, String source, String sink) {
 		// STEP 1.A
 		List<WeightedEdge> sortedEdges = new LinkedList<>();
-		graph.vertices.values().forEach(node -> sortedEdges.addAll((Collection<? extends WeightedEdge>) node.getEdges().values()));
+		graph.vertices.values().forEach(node ->
+			node.getEdges().values().forEach(e -> sortedEdges.add((WeightedEdge) e))
+		);
 
 		// STEP 1.B
 		List<Pair<List<String>, Double>> P = new ArrayList<>(sortedEdges.size());
@@ -44,12 +46,13 @@ public class ChenAlgorithm {
 				k += 1;
 				results.set(k, p);
 			}
-
 		}
+
+		return results;
 	}
 
 	public static WeightedGraph createSubgraph(WeightedGraph g, List<WeightedEdge> edges) {
-		WeightedGraph subgraph = new WeightedGraph();
+		WeightedGraph subgraph = new WeightedGraph(true);
 		g.vertices.values().forEach(n -> {
 			subgraph.vertices.put(n.getId(), new Node(n.getId(), n.getLat(), n.getLng()));
 		});
@@ -90,8 +93,9 @@ public class ChenAlgorithm {
                             /* If so, eliminate the next edge in the path from the graph (later on, this forces the spur
                                node to connect the root path with an un-found suffix path) */
 					WeightedEdge re = new WeightedEdge(
-							graph.vertices.get(p.get(i)),
-							graph.vertices.get(p.get(i+1))
+							p.get(i),
+							p.get(i+1),
+							((WeightedEdge) graph.vertices.get(p.get(i)).getEdges().get(p.get(i+1))).weight
 					);
 					graph.removeEdge(re);
 					removedEdges.add(re);
@@ -99,7 +103,7 @@ public class ChenAlgorithm {
 			}
 
 			/* Temporarily remove all of the nodes in the root path, other than the spur node, from the graph */
-			for (String node : rootPath.subList(0, rootPath.size()-2)) {
+			for (String node : rootPath.subList(0, rootPath.size() - 2)) {
 				if (!node.equals(spurNode)) {
 					removedEdges.addAll(graph.vertices.get(node).getEdges().values());
 
@@ -141,7 +145,7 @@ public class ChenAlgorithm {
 			}
 		} while (!isNewPath);
 
-		if(kthPath == null){
+		if (kthPath == null) {
 			return null;
 		}
 

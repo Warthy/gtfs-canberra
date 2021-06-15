@@ -11,6 +11,12 @@ public class Node {
 	private Map<String, Edge> edges = new HashMap<>();
 
 
+	public Node(String id) {
+		this.id = id;
+		this.lng = null;
+		this.lat = null;
+	}
+
 	public Node(String id, Double lat, Double lng) {
 		this.id = id;
 		this.lng = lng;

@@ -3,27 +3,42 @@ package fr.isep.tp6;
 
 public class WeightedGraph extends Graph {
 
-	public WeightedGraph() {
-		super();
+	public WeightedGraph(boolean directed) {
+		super(directed);
 	}
 
 	public WeightedGraph(String GTFSDirectory) {
 		super(GTFSDirectory);
 	}
 
-	public void addEdge(Node from, Node to) {
+	public WeightedGraph addEdge(String from, String to, Double weight) {
+		vertices.get(from).addEdge(new WeightedEdge(from, to, weight));
+		if(!directed)
+			vertices.get(to).addEdge(new WeightedEdge(to, from, weight));
+		return this;
+	}
+
+	public WeightedGraph addEdge(Node from, Node to) {
 		from.addEdge(new WeightedEdge(from, to));
-		to.addEdge(new WeightedEdge(to, from));
+		if(!directed)
+			to.addEdge(new WeightedEdge(to, from));
+
+		return this;
 	}
 
 	@Override
-	public void removeEdge(String from, String to) {
+	public Graph removeEdge(String from, String to) {
 		vertices.get(from).getEdges().remove(to);
-		vertices.get(to).getEdges().remove(from);
+		if(!directed)
+			vertices.get(to).getEdges().remove(from);
+		return this;
 	}
 
-	public void removeEdge(WeightedEdge edge) {
+	@Override
+	public Graph removeEdge(Edge edge) {
 		vertices.get(edge.from).getEdges().remove(edge.to);
-		vertices.get(edge.to).getEdges().remove(edge.from);
+		if(!directed)
+			vertices.get(edge.to).getEdges().remove(edge.from);
+		return this;
 	}
 }
