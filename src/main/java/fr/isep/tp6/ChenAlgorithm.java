@@ -78,7 +78,7 @@ public class ChenAlgorithm {
 
 		for (int i = 0; i < previousPath.size(); i++) {
 			// Initialize a container to store the modified (removed) edges for this node/iteration
-			LinkedList<Edge> removedEdges = new LinkedList<>();
+			LinkedList<WeightedEdge> removedEdges = new LinkedList<>();
 
 			// Spur node = currently visited node in the (k-1)st shortest path
 			String spurNode = previousPath.get(i).from;
@@ -103,8 +103,8 @@ public class ChenAlgorithm {
 			for (WeightedEdge rootEdge : rootPath) {
 				String node = rootEdge.from;
 				if (!node.equals(spurNode)) {
-					removedEdges.addAll(graph.vertices.get(node).getEdges().values());
 
+					graph.vertices.get(node).getEdges().values().forEach(e -> removedEdges.add((WeightedEdge) e));
 					graph.vertices.remove(node);
 				}
 			}
@@ -124,7 +124,7 @@ public class ChenAlgorithm {
 			}
 
 			// Restore all of the edges that were removed during this iteration
-			removedEdges.forEach(e -> graph.addEdge(graph.vertices.get(e.from), graph.vertices.get(e.to)));
+			removedEdges.forEach(e -> graph.addEdge(e.from, e.to, e.weight));
 		}
 
 		/* Identify the candidate path with the shortest cost */

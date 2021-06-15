@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class Graph {
 
@@ -68,6 +69,9 @@ public abstract class Graph {
 	abstract public Graph removeEdge(Edge edge);
 
 	public static Double getPathCost(List<WeightedEdge> path){
+		if(path == null || path.size() == 0)
+			return Double.MAX_VALUE;
+
 		Double cost = 0.0;
 		for (WeightedEdge e: path)
 			cost += e.weight;
@@ -75,16 +79,37 @@ public abstract class Graph {
 		return cost;
 	}
 
-	public List<List<WeightedEdge>> getAllShortestPaths() {
+	public Map<Pair<String, String>, List<WeightedEdge>> findAllShortestPathsFromStart(String start){
+		Dijkstra dijkstra = new Dijkstra((WeightedGraph) this, start);
+		Map<Pair<String, String>, List<WeightedEdge>> shortestPaths = new HashMap<>();
+
+		for(String node: vertices.keySet()){
+			if(!start.equals(node)){
+				shortestPaths.put(
+						new Pair<>(start, node),
+						dijkstra.getShortesPath(node)
+				);
+			}
+		}
+
+		return shortestPaths;
+	}
+
+	public Map<Pair<String, String>, List<WeightedEdge>> getAllShortestPaths() {
 		Set<Pair<String, String>> allPossiblePairs = new HashSet<>();
-		List<List<WeightedEdge>> shortestPaths = new ArrayList<>();
+		Map<Pair<String, String>, List<WeightedEdge>> shortestPaths = new HashMap<>();
 
 
 		for (String n1 : vertices.keySet()) {
 			Dijkstra dijkstra = new Dijkstra((WeightedGraph) this, n1);
 			for (String n2 : vertices.keySet()) {
 				if (!allPossiblePairs.contains(new Pair<>(n1, n2)) & !allPossiblePairs.contains(new Pair<>(n2, n1))) {
-					shortestPaths.add(dijkstra.getShortesPath(n2));
+					List<WeightedEdge> path = dijkstra.getShortesPath(n2);
+
+					shortestPaths.put(
+							new Pair<>(path.get(0).from, path.get(path.size()-1).to),
+							path
+					);
 					allPossiblePairs.add(new Pair<>(n1, n2));
 				}
 			}
@@ -96,7 +121,7 @@ public abstract class Graph {
 
 	public Map<Pair<String, String>, Integer> getAllEdgesBetweenness() {
 		Map<Pair<String, String>, Integer> edgesBetweenness = new HashMap<>();
-		getAllShortestPaths().forEach(sp -> {
+		getAllShortestPaths().values().forEach(sp -> {
 			for(WeightedEdge edge: sp){
 				Pair<String, String> p1 = new Pair<>(edge.from, edge.to);
 				Pair<String, String> p2 = new Pair<>(edge.to, edge.from);
@@ -124,6 +149,85 @@ public abstract class Graph {
 		}
 
 		return res;
+	}
+
+	public CopyOnWriteArrayList<List<Node>> createClusters(Integer maxAmount){
+		CopyOnWriteArrayList<List<Node>> clusters = new CopyOnWriteArrayList<>();
+		List<Pair<String, String>> removedEdges = new ArrayList<>();
+
+		while (clusters.size() < maxAmount) {
+			Graph currentGraph = this;
+			Map<Pair<String, String>, Integer> edgesBetweenness = getAllEdgesBetweenness();
+			List<Node> usedNodes = new ArrayList<>();
+			clusters = new CopyOnWriteArrayList<>();
+
+			Pair<String, String> removedEdge = edgesBetweenness.keySet().iterator().next();
+			removedEdges.add(removedEdge);
+			currentGraph.removeEdge(removedEdge.getFirst(), removedEdge.getSecond());
+
+			for (Node start : currentGraph.vertices.values()) {
+				if (!usedNodes.contains(start)) {
+					for (Node target : currentGraph.vertices.values()) {
+						if (!usedNodes.contains(target)) {
+							if (start != target) {
+								if (clusters.size() < maxAmount) {
+									Map<Pair<String, String>, List<WeightedEdge>> allShortestPaths = getAllShortestPaths();
+									Map<Pair<String, String>, List<WeightedEdge>> allShortestPathsFromTarget = findAllShortestPathsFromStart(target.getId());
+
+									Pair<Node, Node> ride = new Pair<>(start, target);
+									if (allShortestPaths.get(ride) == null) {             // If there is no SP between start and target
+										if (!usedNodes.contains(target)) {
+											List<Node> newCluster = new ArrayList<>();
+											newCluster.add(target);
+											usedNodes.add(target);
+											for (Map.Entry<Pair<String, String>, List<WeightedEdge>> entry : allShortestPathsFromTarget.entrySet()) {
+												if (entry.getValue() != null && !usedNodes.contains(vertices.get(entry.getKey().getSecond()))) {
+													newCluster.add(
+															vertices.get(entry.getKey().getSecond())
+													);
+													usedNodes.add(
+															vertices.get(entry.getKey().getSecond())
+													);
+												}
+											}
+											clusters.add(newCluster);
+										}
+									} else {
+										// If there is an SP between start and target
+										if (!usedNodes.contains(start)) {
+											usedNodes.add(start);
+											List<Node> newCluster = new ArrayList<>();
+											newCluster.add(start);
+											Map<Pair<String, String>, List<WeightedEdge>> allSPOfStart = findAllShortestPathsFromStart(start.getId());
+											for (Map.Entry<Pair<String, String>, List<WeightedEdge>> entry : allSPOfStart.entrySet()) {
+												if (entry.getValue() != null && !usedNodes.contains(vertices.get(entry.getKey().getSecond()))) {
+													newCluster.add(
+															vertices.get(entry.getKey().getSecond())
+													);
+													usedNodes.add(
+															vertices.get(entry.getKey().getSecond())
+													);
+												}
+											}
+											clusters.add(newCluster);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+		System.out.println("We deleted " + removedEdges.size() + " edges to create the clusters : ");
+		for (Pair<String, String> removeEdge : removedEdges) {
+			System.out.print(removeEdge.getFirst() + ":" + removeEdge.getSecond() + " ");
+		}
+		System.out.println("\n");
+
+		return clusters;
 	}
 
 }
