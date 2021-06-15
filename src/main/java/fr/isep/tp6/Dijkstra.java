@@ -70,7 +70,7 @@ public class Dijkstra {
 		String crawl = v;
 		String crawl2 = previous.get(crawl);;
 
-		while (previous.get(crawl2) != null) {
+		while (crawl2 != null) {
 			path.add((WeightedEdge) graph.vertices.get(crawl2).getEdges().get(crawl));
 
 			crawl = crawl2;

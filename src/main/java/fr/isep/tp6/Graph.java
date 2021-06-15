@@ -99,17 +99,13 @@ public abstract class Graph {
 		Set<Pair<String, String>> allPossiblePairs = new HashSet<>();
 		Map<Pair<String, String>, List<WeightedEdge>> shortestPaths = new HashMap<>();
 
-
 		for (String n1 : vertices.keySet()) {
 			Dijkstra dijkstra = new Dijkstra((WeightedGraph) this, n1);
 			for (String n2 : vertices.keySet()) {
-				if (!allPossiblePairs.contains(new Pair<>(n1, n2)) & !allPossiblePairs.contains(new Pair<>(n2, n1))) {
+				if (!n2.equals(n1) && !allPossiblePairs.contains(new Pair<>(n1, n2)) && !allPossiblePairs.contains(new Pair<>(n2, n1))) {
 					List<WeightedEdge> path = dijkstra.getShortesPath(n2);
 
-					shortestPaths.put(
-							new Pair<>(path.get(0).from, path.get(path.size() - 1).to),
-							path
-					);
+					shortestPaths.put(new Pair<>(n1, n2), path);
 					allPossiblePairs.add(new Pair<>(n1, n2));
 				}
 			}
@@ -126,13 +122,13 @@ public abstract class Graph {
 				Pair<String, String> p1 = new Pair<>(edge.from, edge.to);
 				Pair<String, String> p2 = new Pair<>(edge.to, edge.from);
 
-				if (edgesBetweenness.containsKey(p1)) {
+				if (edgesBetweenness.containsKey(p1))
 					edgesBetweenness.put(p1, edgesBetweenness.get(p1) + 1);
-				} else if (edgesBetweenness.containsKey(p2)) {
+				else if (edgesBetweenness.containsKey(p2))
 					edgesBetweenness.put(p2, edgesBetweenness.get(p2) + 1);
-				} else {
+				else
 					edgesBetweenness.put(p1, 1);
-				}
+
 			}
 		});
 
@@ -174,7 +170,7 @@ public abstract class Graph {
 		List<Set<String>> clusters = new ArrayList<>();
 		List<Pair<String, String>> removedEdges = new ArrayList<>();
 
-		while (clusters.size() < maxAmount || !vertices.values().stream().allMatch(v -> v.getEdges().size() == 0)) {
+		while (clusters.size() < maxAmount && !vertices.values().stream().allMatch(v -> v.getEdges().size() == 0)) {
 			Map<Pair<String, String>, Integer> edgesBetweenness = getAllEdgesBetweenness();
 			clusters = new ArrayList<>();
 
