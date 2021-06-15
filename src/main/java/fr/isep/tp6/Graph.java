@@ -64,6 +64,19 @@ public abstract class Graph {
 
 	abstract public void removeEdge(String from, String to);
 
+	abstract public void removeEdge(Edge edge);
+
+	public Double getPathCost(List<String> path){
+		Double cost = 0.0;
+		int i = 0;
+		while(i+1 < path.size()){
+			cost += ((WeightedEdge) vertices.get(path.get(i)).getEdges().get(path.get(i+1))).weight;
+
+			i++;
+		}
+		return cost;
+	}
+
 	public List<List<String>> getAllShortestPaths() {
 		Set<Pair<String, String>> allPossiblePairs = new HashSet<>();
 		List<List<String>> shortestPaths = new ArrayList<>();

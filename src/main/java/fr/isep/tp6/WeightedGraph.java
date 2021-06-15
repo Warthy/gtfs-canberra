@@ -21,4 +21,9 @@ public class WeightedGraph extends Graph {
 		vertices.get(from).getEdges().remove(to);
 		vertices.get(to).getEdges().remove(from);
 	}
+
+	public void removeEdge(WeightedEdge edge) {
+		vertices.get(edge.from).getEdges().remove(edge.to);
+		vertices.get(edge.to).getEdges().remove(edge.from);
+	}
 }

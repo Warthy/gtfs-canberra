@@ -20,7 +20,7 @@ public class ChenAlgorithm {
 		}
 
 		int k = 0;
-		List<List<String>> results = new ArrayList<>();
+		List<List<String>> results = new LinkedList<>();
 		while (k < K && P.size() != 0) {
 
 			// STEP 2.A
@@ -36,7 +36,7 @@ public class ChenAlgorithm {
 
 			// STEP 2.B
 			subgraph = createSubgraph(graph, sortedEdges.subList(minIndex, sortedEdges.size() - 1));
-			P.set(minIndex, computeNextODSPLoopless(subgraph, source, sink, results));
+			P.set(minIndex, computeNextODSPLoopless(subgraph, source, sink, results)); // handle null case ?
 
 
 			// STEP 2.C
@@ -74,32 +74,36 @@ public class ChenAlgorithm {
 
 		for (int i = 0; i < previousPath.size(); i++) {
 			// Initialize a container to store the modified (removed) edges for this node/iteration
-			LinkedList<WeightedEdge> removedEdges = new LinkedList<>();
+			LinkedList<Edge> removedEdges = new LinkedList<>();
 
 			// Spur node = currently visited node in the (k-1)st shortest path
 			String spurNode = previousPath.get(i);
 
 			// Root path = prefix portion of the (k-1)st path up to the spur node
-			List<String> rootPath = previousPath.cloneTo(i);
+			List<String> rootPath = previousPath.subList(0, i);
 
 			/* Iterate over all of the (k-1) shortest paths */
 			for (List<String> p : ksp) {
-				List<String> stub = p.cloneTo(i);
+				List<String> stub = p.subList(0, i);
 				// Check to see if this path has the same prefix/root as the (k-1)st shortest path
 				if (rootPath.equals(stub)) {
                             /* If so, eliminate the next edge in the path from the graph (later on, this forces the spur
                                node to connect the root path with an un-found suffix path) */
-					WeightedEdge re = p.getEdges().get(i);
-					graph.removeEdge(re.getFromNode(), re.getToNode());
+					WeightedEdge re = new WeightedEdge(
+							graph.vertices.get(p.get(i)),
+							graph.vertices.get(p.get(i+1))
+					);
+					graph.removeEdge(re);
 					removedEdges.add(re);
 				}
 			}
 
 			/* Temporarily remove all of the nodes in the root path, other than the spur node, from the graph */
-			for (Edge rootPathEdge : rootPath.getEdges()) {
-				String rn = rootPathEdge.getFromNode();
-				if (!rn.equals(spurNode)) {
-					removedEdges.addAll(graph.removeNode(rn));
+			for (String node : rootPath.subList(0, rootPath.size()-2)) {
+				if (!node.equals(spurNode)) {
+					removedEdges.addAll(graph.vertices.get(node).getEdges().values());
+
+					graph.vertices.remove(node);
 				}
 			}
 
@@ -109,8 +113,8 @@ public class ChenAlgorithm {
 			// If a new spur path was identified...
 			if (spurPath != null) {
 				// Concatenate the root and spur paths to form the new candidate path
-				List<String> totalPath = rootPath.clone();
-				totalPath.addPath(spurPath);
+				LinkedList<String> totalPath = new LinkedList<>(rootPath);
+				totalPath.addAll(spurPath);
 
 				// If candidate path has not been generated previously, add it
 				if (!candidates.contains(totalPath))
@@ -137,6 +141,10 @@ public class ChenAlgorithm {
 			}
 		} while (!isNewPath);
 
-		return new Pair<>(kthPath, );
+		if(kthPath == null){
+			return null;
+		}
+
+		return new Pair<>(kthPath, graph.getPathCost(kthPath));
 	}
 }
