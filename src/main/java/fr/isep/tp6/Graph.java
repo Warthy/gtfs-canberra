@@ -67,20 +67,17 @@ public abstract class Graph {
 
 	abstract public Graph removeEdge(Edge edge);
 
-	public Double getPathCost(List<String> path){
+	public static Double getPathCost(List<WeightedEdge> path){
 		Double cost = 0.0;
-		int i = 0;
-		while(i+1 < path.size()){
-			cost += ((WeightedEdge) vertices.get(path.get(i)).getEdges().get(path.get(i+1))).weight;
+		for (WeightedEdge e: path)
+			cost += e.weight;
 
-			i++;
-		}
 		return cost;
 	}
 
-	public List<List<String>> getAllShortestPaths() {
+	public List<List<WeightedEdge>> getAllShortestPaths() {
 		Set<Pair<String, String>> allPossiblePairs = new HashSet<>();
-		List<List<String>> shortestPaths = new ArrayList<>();
+		List<List<WeightedEdge>> shortestPaths = new ArrayList<>();
 
 
 		for (String n1 : vertices.keySet()) {
@@ -99,11 +96,10 @@ public abstract class Graph {
 
 	public Map<Pair<String, String>, Integer> getAllEdgesBetweenness() {
 		Map<Pair<String, String>, Integer> edgesBetweenness = new HashMap<>();
-
 		getAllShortestPaths().forEach(sp -> {
-			for (int i = 0; i < sp.size()-1; i += 2) {
-				Pair<String, String> p1 = new Pair<>(sp.get(i), sp.get(i + 1));
-				Pair<String, String> p2 = new Pair<>(sp.get(i + 1), sp.get(i));
+			for(WeightedEdge edge: sp){
+				Pair<String, String> p1 = new Pair<>(edge.from, edge.to);
+				Pair<String, String> p2 = new Pair<>(edge.to, edge.from);
 
 				if (edgesBetweenness.containsKey(p1)) {
 					edgesBetweenness.put(p1, edgesBetweenness.get(p1) + 1);

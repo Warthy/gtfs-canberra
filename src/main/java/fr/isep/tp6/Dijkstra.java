@@ -3,12 +3,14 @@ package fr.isep.tp6;
 import java.util.*;
 
 public class Dijkstra {
+	WeightedGraph graph;
 	Map<String, Boolean> marked;
 	Map<String, String> previous;
 	Map<String, Double> distance;
 
 
 	public Dijkstra(WeightedGraph graph, String s) {
+		this.graph = graph;
 		this.marked = new HashMap<>(graph.vertices.size());
 		this.previous = new HashMap<>(graph.vertices.size());
 		this.distance = new HashMap<>(graph.vertices.size());
@@ -63,25 +65,27 @@ public class Dijkstra {
 		return distance.getOrDefault(v, Double.MAX_VALUE);
 	}
 
-	public List<String> getShortesPath(String v){
-		LinkedList<String> path = new LinkedList<>();
+	public List<WeightedEdge> getShortesPath(String v){
+		LinkedList<WeightedEdge> path = new LinkedList<>();
 		String crawl = v;
-		path.add(crawl);
+		String crawl2 = previous.get(crawl);;
 
-		while (previous.get(crawl) != null) {
-			path.add(previous.get(crawl));
-			crawl = previous.get(crawl);
+		while (previous.get(crawl2) != null) {
+			path.add((WeightedEdge) graph.vertices.get(crawl2).getEdges().get(crawl));
+
+			crawl = crawl2;
+			crawl2 = previous.get(crawl2);
 		}
 
 		return path;
 	}
 
 	public void printSP(String v) {
-		List<String> path = getShortesPath(v);
+		List<WeightedEdge> path = getShortesPath(v);
 
 		System.out.println("Path is :");
 		for (int i = path.size() - 1; i >= 0; i--) {
-			System.out.print(path.get(i) + " ");
+			System.out.print(path.get(i).from + " ->" + path.get(i).to + " ");
 		}
 	}
 }

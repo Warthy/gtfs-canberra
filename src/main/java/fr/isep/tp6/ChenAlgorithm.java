@@ -1,12 +1,10 @@
 package fr.isep.tp6;
 
-import org.jgrapht.alg.util.Pair;
-
 import java.util.*;
 
 public class ChenAlgorithm {
 
-	public static List<List<String>> run(WeightedGraph graph, int K, String source, String sink) {
+	public static List<List<WeightedEdge>> run(WeightedGraph graph, int K, String source, String sink) {
 		// STEP 1.A
 		List<WeightedEdge> sortedEdges = new LinkedList<>();
 		graph.vertices.values().forEach(node ->
@@ -14,27 +12,27 @@ public class ChenAlgorithm {
 		);
 
 		// STEP 1.B
-		List<Pair<List<String>, Double>> P = new ArrayList<>(sortedEdges.size());
+		List<List<WeightedEdge>> P = new ArrayList<>(sortedEdges.size());
 		WeightedGraph subgraph = graph;
 		for (int i = 0; i < sortedEdges.size(); i++) {
 			subgraph = createSubgraph(subgraph, sortedEdges.subList(i, sortedEdges.size() - 1));
-			P.set(i, computeODSPLoopless(subgraph, source, sink));
+			P.add(computeODSPLoopless(subgraph, source, sink));
 		}
 
 		int k = 0;
-		List<List<String>> results = new LinkedList<>();
+		List<List<WeightedEdge>> results = new LinkedList<>();
 		while (k < K && P.size() != 0) {
 
 			// STEP 2.A
 			int minIndex = 0;
-			Pair<List<String>, Double> minP = P.get(minIndex);
+			List<WeightedEdge> minP = P.get(minIndex);
 			for (int j = 0; j < P.size(); j++) {
-				if (P.get(j).getSecond() < minP.getSecond()) {
+				if (Graph.getPathCost(P.get(j)) < Graph.getPathCost(minP)) {
 					minIndex = j;
 					minP = P.get(j);
 				}
 			}
-			List<String> p = minP.getFirst();
+			List<WeightedEdge> p = minP;
 
 			// STEP 2.B
 			subgraph = createSubgraph(graph, sortedEdges.subList(minIndex, sortedEdges.size() - 1));
@@ -44,7 +42,7 @@ public class ChenAlgorithm {
 			// STEP 2.C
 			if (k == 0 || results.contains(p)) {
 				k += 1;
-				results.set(k, p);
+				results.add(p);
 			}
 		}
 
@@ -57,53 +55,53 @@ public class ChenAlgorithm {
 			subgraph.vertices.put(n.getId(), new Node(n.getId(), n.getLat(), n.getLng()));
 		});
 
-		edges.forEach(e -> subgraph.addEdge(subgraph.vertices.get(e.from), subgraph.vertices.get(e.to)));
+		edges.forEach(e -> subgraph.addEdge(e.from, e.to, e.weight));
 
 		return subgraph;
 	}
 
-	public static Pair<List<String>, Double> computeODSPLoopless(WeightedGraph graph, String source, String sink) {
+	public static List<WeightedEdge> computeODSPLoopless(WeightedGraph graph, String source, String sink) {
 		Dijkstra dijkstra = new Dijkstra(graph, source);
-		return new Pair<>(dijkstra.getShortesPath(sink), dijkstra.distTo(sink));
+		return dijkstra.getShortesPath(sink);
 	}
 
 	/**
 	 * Yen's Algorithm
 	 */
-	public static Pair<List<String>, Double> computeNextODSPLoopless(WeightedGraph graph, String source, String sink, List<List<String>> ksp) {
-		List<String> kthPath;
-		List<String> previousPath = ksp.get(ksp.size() - 2);
-		PriorityQueue<List<String>> candidates = new PriorityQueue<>();
+	public static List<WeightedEdge> computeNextODSPLoopless(WeightedGraph graph, String source, String sink, List<List<WeightedEdge>> ksp) {
+		List<WeightedEdge> kthPath;
+		if(ksp.size() == 0)
+			ksp.add((new Dijkstra(graph, source)).getShortesPath(sink));
+
+		List<WeightedEdge> previousPath = ksp.get(ksp.size() - 1);
+		PriorityQueue<LinkedList<WeightedEdge>> candidates = new PriorityQueue<>(new PathComparator());
 
 		for (int i = 0; i < previousPath.size(); i++) {
 			// Initialize a container to store the modified (removed) edges for this node/iteration
 			LinkedList<Edge> removedEdges = new LinkedList<>();
 
 			// Spur node = currently visited node in the (k-1)st shortest path
-			String spurNode = previousPath.get(i);
+			String spurNode = previousPath.get(i).from;
 
 			// Root path = prefix portion of the (k-1)st path up to the spur node
-			List<String> rootPath = previousPath.subList(0, i);
+			List<WeightedEdge> rootPath = previousPath.subList(0, i);
 
 			/* Iterate over all of the (k-1) shortest paths */
-			for (List<String> p : ksp) {
-				List<String> stub = p.subList(0, i);
+			for (List<WeightedEdge> p : ksp) {
+				List<WeightedEdge> stub = p.subList(0, i);
 				// Check to see if this path has the same prefix/root as the (k-1)st shortest path
 				if (rootPath.equals(stub)) {
                             /* If so, eliminate the next edge in the path from the graph (later on, this forces the spur
                                node to connect the root path with an un-found suffix path) */
-					WeightedEdge re = new WeightedEdge(
-							p.get(i),
-							p.get(i+1),
-							((WeightedEdge) graph.vertices.get(p.get(i)).getEdges().get(p.get(i+1))).weight
-					);
-					graph.removeEdge(re);
+					WeightedEdge re = p.get(i);
+					graph.removeEdge(re.from, re.to);
 					removedEdges.add(re);
 				}
 			}
 
 			/* Temporarily remove all of the nodes in the root path, other than the spur node, from the graph */
-			for (String node : rootPath.subList(0, rootPath.size() - 2)) {
+			for (WeightedEdge rootEdge : rootPath) {
+				String node = rootEdge.from;
 				if (!node.equals(spurNode)) {
 					removedEdges.addAll(graph.vertices.get(node).getEdges().values());
 
@@ -112,12 +110,12 @@ public class ChenAlgorithm {
 			}
 
 			// Spur path = shortest path from spur node to target node in the reduced graph
-			List<String> spurPath = (new Dijkstra(graph, spurNode)).getShortesPath(sink);
+			List<WeightedEdge> spurPath = (new Dijkstra(graph, spurNode)).getShortesPath(sink);
 
 			// If a new spur path was identified...
 			if (spurPath != null) {
 				// Concatenate the root and spur paths to form the new candidate path
-				LinkedList<String> totalPath = new LinkedList<>(rootPath);
+				LinkedList<WeightedEdge> totalPath = new LinkedList<>(rootPath);
 				totalPath.addAll(spurPath);
 
 				// If candidate path has not been generated previously, add it
@@ -135,7 +133,7 @@ public class ChenAlgorithm {
 			kthPath = candidates.poll();
 			isNewPath = true;
 			if (kthPath != null) {
-				for (List<String> p : ksp) {
+				for (List<WeightedEdge> p : ksp) {
 					// Check to see if this candidate path duplicates a previously found path
 					if (p.equals(kthPath)) {
 						isNewPath = false;
@@ -145,10 +143,21 @@ public class ChenAlgorithm {
 			}
 		} while (!isNewPath);
 
-		if (kthPath == null) {
-			return null;
-		}
 
-		return new Pair<>(kthPath, graph.getPathCost(kthPath));
+		return kthPath;
+	}
+}
+
+
+class PathComparator implements Comparator<LinkedList<WeightedEdge>>{
+	public int compare(LinkedList<WeightedEdge> p1, LinkedList<WeightedEdge> p2) {
+		Double cost1 = Graph.getPathCost(p1);
+		Double cost2 = Graph.getPathCost(p2);
+
+		if (cost1 < cost2)
+			return 1;
+		else if (cost1 > cost2)
+			return -1;
+		return 0;
 	}
 }

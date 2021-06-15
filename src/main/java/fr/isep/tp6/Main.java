@@ -1,10 +1,6 @@
 package fr.isep.tp6;
 
-
-import org.jgrapht.alg.util.Pair;
-
 import java.util.List;
-import java.util.Map;
 
 public class Main {
 	public static void main(String[] args) {
@@ -29,7 +25,7 @@ public class Main {
 				.addEdge("6", "1", 3.0);
 
 
-		List<List<String>> paths = ChenAlgorithm.run(wGraph, 2, "3", "4");
+		List<List<WeightedEdge>> paths = ChenAlgorithm.run(wGraph, 2, "3", "4");
 
 		System.out.println(paths);
 	}
